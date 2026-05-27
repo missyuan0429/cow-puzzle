@@ -211,7 +211,7 @@ const REGION_PRESETS = [
   ],
 ];
 
-const REGION_COLORS = ['#D4F1D4','#FFE2E8','#D6EAF8','#FFF3D6','#E8D5F5','#D5F5E3'];
+const REGION_COLORS = ['#FF8A8A','#8ECAE6','#FFE066','#95D5A2','#C8B6FF','#FFB74D'];
 
 let solution = [];
 let givenCows = [];
@@ -461,7 +461,6 @@ function confirmPlacement() {
   }
   
   // 4. 检查颜色区域
-  let regionMap = REGION_PRESETS[regionPresetIdx];
   let regionCount = {};
   for (let [r, c] of allCows) {
     let rid = regionMap[r][c];
