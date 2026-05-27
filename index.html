@@ -271,7 +271,7 @@ function findAllSolutions(map) {
   return solutions;
 }
 
-// ============ 生成题目（恰好1只已知牛 + 唯一解） ============
+// ============ 生成题目（最少已知牛 + 唯一解） ============
 function generatePuzzle() {
   console.log('generatePuzzle called, level:', currentLevel);
   let eligible = getEligiblePresets(currentLevel);
@@ -287,32 +287,87 @@ function generatePuzzle() {
     console.log('allSolutions count:', allSolutions.length);
     if (allSolutions.length === 0) { console.log('no solutions, skip'); continue; }
 
-    // 按固定顺序尝试解，保证可重复性
+    // 尝试1只已知牛
     for (let answer of allSolutions) {
       let answerPositions = [];
       for (let r = 0; r < GRID_SIZE; r++)
         for (let c = 0; c < GRID_SIZE; c++)
           if (answer[r][c]) answerPositions.push([r, c]);
 
-      // 按固定顺序尝试牛位
       for (let [gr, gc] of answerPositions) {
-        // 检查：其他解在这个位置都没有牛 → 该已知牛唯一确定答案
         let others = allSolutions.filter(s => {
           for (let r = 0; r < GRID_SIZE; r++)
             for (let c = 0; c < GRID_SIZE; c++)
               if (s[r][c] !== answer[r][c]) return true;
           return false;
         });
-        let isUnique = others.every(s => !s[gr][gc]);
-        if (isUnique) {
+        if (others.every(s => !s[gr][gc])) {
           regionMap = map;
           regionPresetIdx = p;
-          console.log('SUCCESS: preset', p, 'given:', [gr, gc]);
+          console.log('SUCCESS: 1 given cow, preset', p, 'given:', [gr, gc]);
           return { solution: answer, givenCows: [[gr, gc]] };
         }
       }
     }
-    console.log('preset', p, 'cannot achieve unique with 1 given cow');
+
+    // 尝试2只已知牛
+    for (let answer of allSolutions) {
+      let answerPositions = [];
+      for (let r = 0; r < GRID_SIZE; r++)
+        for (let c = 0; c < GRID_SIZE; c++)
+          if (answer[r][c]) answerPositions.push([r, c]);
+
+      for (let i = 0; i < answerPositions.length; i++) {
+        for (let j = i + 1; j < answerPositions.length; j++) {
+          let [gr1, gc1] = answerPositions[i];
+          let [gr2, gc2] = answerPositions[j];
+          let others = allSolutions.filter(s => {
+            for (let r = 0; r < GRID_SIZE; r++)
+              for (let c = 0; c < GRID_SIZE; c++)
+                if (s[r][c] !== answer[r][c]) return true;
+            return false;
+          });
+          if (others.every(s => !(s[gr1][gc1] && s[gr2][gc2]))) {
+            regionMap = map;
+            regionPresetIdx = p;
+            console.log('SUCCESS: 2 given cows, preset', p, 'given:', [[gr1, gc1], [gr2, gc2]]);
+            return { solution: answer, givenCows: [[gr1, gc1], [gr2, gc2]] };
+          }
+        }
+      }
+    }
+
+    // 尝试3只已知牛
+    for (let answer of allSolutions) {
+      let answerPositions = [];
+      for (let r = 0; r < GRID_SIZE; r++)
+        for (let c = 0; c < GRID_SIZE; c++)
+          if (answer[r][c]) answerPositions.push([r, c]);
+
+      for (let i = 0; i < answerPositions.length; i++) {
+        for (let j = i + 1; j < answerPositions.length; j++) {
+          for (let k = j + 1; k < answerPositions.length; k++) {
+            let [gr1, gc1] = answerPositions[i];
+            let [gr2, gc2] = answerPositions[j];
+            let [gr3, gc3] = answerPositions[k];
+            let others = allSolutions.filter(s => {
+              for (let r = 0; r < GRID_SIZE; r++)
+                for (let c = 0; c < GRID_SIZE; c++)
+                  if (s[r][c] !== answer[r][c]) return true;
+              return false;
+            });
+            if (others.every(s => !(s[gr1][gc1] && s[gr2][gc2] && s[gr3][gc3]))) {
+              regionMap = map;
+              regionPresetIdx = p;
+              console.log('SUCCESS: 3 given cows, preset', p, 'given:', [[gr1, gc1], [gr2, gc2], [gr3, gc3]]);
+              return { solution: answer, givenCows: [[gr1, gc1], [gr2, gc2], [gr3, gc3]] };
+            }
+          }
+        }
+      }
+    }
+
+    console.log('preset', p, 'cannot achieve unique with up to 3 given cows');
   }
 
   // 保底：纵向分区暴力尝试
@@ -320,30 +375,13 @@ function generatePuzzle() {
   regionPresetIdx = 0;
   regionMap = REGION_PRESETS[0].map(row => [...row]);
   let all = findAllSolutions(regionMap);
-  for (let answer of all) {
-    let pos = [];
-    for (let r = 0; r < GRID_SIZE; r++)
-      for (let c = 0; c < GRID_SIZE; c++)
-        if (answer[r][c]) pos.push([r, c]);
-    for (let [gr, gc] of pos) {
-      let others = all.filter(s => {
-        for (let r = 0; r < GRID_SIZE; r++)
-          for (let c = 0; c < GRID_SIZE; c++)
-            if (s[r][c] !== answer[r][c]) return true;
-        return false;
-      });
-      if (others.every(s => !s[gr][gc])) {
-        return { solution: answer, givenCows: [[gr, gc]] };
-      }
-    }
-  }
-  // 终极保底
   let ans = all[0];
   let pp = [];
   for (let r = 0; r < GRID_SIZE; r++)
     for (let c = 0; c < GRID_SIZE; c++)
       if (ans[r][c]) pp.push([r, c]);
-  return { solution: ans, givenCows: [pp[0]] };
+  // 保底给3只已知牛
+  return { solution: ans, givenCows: [pp[0], pp[1], pp[2]] };
 }
 
 // ============ 初始化 ============
