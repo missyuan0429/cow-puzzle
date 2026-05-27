@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>找牛牛</title>
+<title>找牛牛 - 大师版</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
@@ -15,7 +15,20 @@
     width: 100%; max-width: 420px; min-height: 100vh;
     background: white; display: flex; flex-direction: column; padding: 12px 16px 20px;
   }
-  .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 4px 12px; }
+
+  /* 难度选择器 */
+  .tier-selector { display: flex; gap: 6px; padding: 4px 0 10px; }
+  .tier-btn {
+    flex: 1; border: none; border-radius: 10px; padding: 7px 0; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; color: #888; background: #F0F0F0;
+  }
+  .tier-btn.active-easy { background: #E8F5E9; color: #2E7D32; box-shadow: 0 1px 4px rgba(46,125,50,0.15); }
+  .tier-btn.active-medium { background: #FFF8E1; color: #F57F17; box-shadow: 0 1px 4px rgba(245,127,23,0.15); }
+  .tier-btn.active-hard { background: #FCE4EC; color: #C62828; box-shadow: 0 1px 4px rgba(198,40,40,0.15); }
+  .tier-btn.active-master { background: #F3E5F5; color: #6A1B9A; box-shadow: 0 1px 4px rgba(106,27,154,0.15); }
+  .tier-btn:active { transform: scale(0.95); }
+
+  .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 4px 8px; }
   .top-left { display: flex; align-items: center; gap: 10px; }
   .settings-btn { width: 32px; height: 32px; border-radius: 50%; background: #F0F0F0; border: none; cursor: pointer; font-size: 16px; color: #888; }
   .level-badge { background: linear-gradient(135deg, #FFE0B2, #FFF8E1); border-radius: 20px; padding: 6px 16px; font-size: 15px; font-weight: 600; color: #E65100; }
@@ -27,12 +40,12 @@
   .heart { font-size: 16px; transition: all 0.2s; }
   .heart.lost { opacity: 0.3; transform: scale(0.9); }
 
-  .rules-card { display: flex; background: #F9F9F9; border-radius: 12px; margin: 8px 0 12px; overflow: hidden; border: 1px solid #EEE; }
+  .rules-card { display: flex; background: #F9F9F9; border-radius: 12px; margin: 4px 0 10px; overflow: hidden; border: 1px solid #EEE; }
   .rule-item { flex: 1; text-align: center; padding: 10px 6px; font-size: 11px; color: #666; line-height: 1.4; position: relative; }
   .rule-item:not(:last-child)::after { content: ''; position: absolute; right: 0; top: 20%; height: 60%; width: 1px; background: #E0E0E0; }
   .rule-icon { font-size: 16px; display: block; margin-bottom: 4px; }
 
-  .cow-hint-area { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 6px 0 10px; }
+  .cow-hint-area { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 4px 0 8px; }
   .cow-icon { font-size: 36px; transition: transform 0.3s; }
   .cow-icon.angry { animation: cowShake 0.5s ease; }
   @keyframes cowShake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-4px)} 40%,80%{transform:translateX(4px)} }
@@ -78,7 +91,7 @@
 
   .bomb-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,0,0,0); display: none; align-items: center; justify-content: center; z-index: 1000; pointer-events: none; }
   .bomb-overlay.show { display: flex; animation: bombFlash 0.6s ease; }
-  @keyframes bombFlash { 0%{background:rgba(255,0,0,0)} 30%{background:rgba(255,100,100,0.15)} 100%{background:rgba(255,0,0,0)} }
+  @keyframes bombFlash { 0%{background:rgba(255,100,100,0.15)} 30%{background:rgba(255,100,100,0.15)} 100%{background:rgba(255,0,0,0)} }
   .bomb-emoji { font-size: 70px; animation: bombExplode 0.5s ease; }
   @keyframes bombExplode { 0%{transform:scale(0.3) rotate(-20deg);opacity:0} 40%{transform:scale(1.4) rotate(10deg);opacity:1} 70%{transform:scale(0.9) rotate(0)} 100%{transform:scale(1) rotate(0)} }
 
@@ -107,11 +120,20 @@
     .rule-item { font-size: 10px; padding: 8px 4px; }
     .tool-icon, .hint-icon { font-size: 24px; }
     .cell { font-size: 18px; }
+    .tier-btn { font-size: 11px; padding: 6px 0; }
   }
 </style>
 </head>
 <body>
 <div class="game-container">
+  <!-- 难度选择器 -->
+  <div class="tier-selector">
+    <button class="tier-btn active-easy" data-tier="0" onclick="switchTier(0)">简单</button>
+    <button class="tier-btn" data-tier="1" onclick="switchTier(1)">中等</button>
+    <button class="tier-btn" data-tier="2" onclick="switchTier(2)">困难</button>
+    <button class="tier-btn" data-tier="3" onclick="switchTier(3)">大师</button>
+  </div>
+
   <div class="top-bar">
     <div class="top-left">
       <button class="settings-btn">&#9881;&#65039;</button>
@@ -166,7 +188,7 @@
     <div class="win-emoji">&#x1F389;&#x1F42E;&#x1F389;</div>
     <div class="win-title">找到所有牛牛啦！</div>
     <div class="win-message" id="winMessage">太棒了！第1关完成</div>
-    <button class="win-btn" onclick="newPuzzle()">下一关</button>
+    <button class="win-btn" onclick="nextLevel()">下一关</button>
   </div>
 </div>
 
@@ -174,6 +196,8 @@
 const GRID_SIZE = 6;
 const COW_COUNT = 6;
 const TOTAL_LEVELS = 1000;
+const TIER_NAMES = ['简单', '中等', '困难', '大师'];
+const TIER_LEVELS_PER = 250;
 
 const REGION_COLORS = ['#FF8A8A','#8ECAE6','#FFE066','#95D5A2','#C8B6FF','#FFB74D'];
 
@@ -189,8 +213,19 @@ var currentLevel = 1;
 var hintsRemaining = 3;
 var coins = 0;
 var regionMap = [];
+var currentTier = 0;
 
-// ============ 加载关卡数据 ============
+function switchTier(tier) {
+  if (tier === currentTier) return;
+  currentTier = tier;
+  var btns = document.querySelectorAll('.tier-btn');
+  for (var i = 0; i < btns.length; i++) btns[i].className = 'tier-btn';
+  var cls = ['active-easy','active-medium','active-hard','active-master'][tier];
+  btns[tier].className = 'tier-btn ' + cls;
+  currentLevel = tier * TIER_LEVELS_PER + 1;
+  newPuzzle();
+}
+
 async function loadLevelsData() {
   var overlay = document.getElementById('loadingOverlay');
   var text = document.getElementById('loadingText');
@@ -201,37 +236,31 @@ async function loadLevelsData() {
     var data = await resp.json();
     levelsData = data.levels;
     levelsLoaded = true;
-    text.textContent = '关卡数据加载完成，共 ' + levelsData.length + ' 关';
+    text.textContent = '关卡数据加载完成，共 ' + levelsData.length + ' 关（四档难度）';
     console.log('关卡数据加载成功，共', levelsData.length, '关');
     await new Promise(function(r) { setTimeout(r, 500); });
     overlay.style.display = 'none';
     return true;
   } catch (e) {
     console.error('加载关卡数据失败:', e);
-    text.textContent = '⚠️ 加载失败，请确保 levels.json 与 index.html 在同一目录';
+    text.textContent = '加载失败，请确保 levels.json 与 index.html 在同一目录';
     return false;
   }
 }
 
-// ============ 从 levels.json 读取当前关卡 ============
 function loadLevel(levelNum) {
-  if (!levelsLoaded || !levelsData) {
-    console.error('关卡数据未加载');
-    return null;
-  }
+  if (!levelsLoaded || !levelsData) { console.error('关卡数据未加载'); return null; }
   var idx = levelNum - 1;
   if (idx < 0 || idx >= levelsData.length) {
     console.log('关卡超出范围，回到第1关');
-    currentLevel = 1;
-    idx = 0;
+    currentLevel = 1; idx = 0;
   }
   var level = levelsData[idx];
-  console.log('加载关卡', level.id, '难度', level.difficulty);
+  console.log('加载关卡', level.id, '难度档', TIER_NAMES[level.tier], 'difficulty=', level.difficulty, 'known_cow=', level.known_cow);
 
   regionMap = level.regions;
-
-  var kr = level.known_cow[0], kc = level.known_cow[1];
-  givenCows = [[kr, kc]];
+  givenCows = [];
+  if (level.known_cow) givenCows = [level.known_cow];
 
   var sol = [];
   for (var i = 0; i < GRID_SIZE; i++) {
@@ -244,37 +273,27 @@ function loadLevel(levelNum) {
     sol[pos[0]][pos[1]] = true;
   }
   solution = sol;
-
   return level;
 }
 
-// ============ 新一局 ============
 function newPuzzle() {
-  console.log('=== newPuzzle called, level:', currentLevel, '===');
+  console.log('=== newPuzzle called, level:', currentLevel, 'tier:', currentTier, '===');
   document.getElementById('winOverlay').classList.remove('show');
   var errs = document.querySelectorAll('.cell.error-mark');
   for (var ei = 0; ei < errs.length; ei++) errs[ei].classList.remove('error-mark');
 
-  if (!loadLevel(currentLevel)) {
-    console.error('无法加载关卡', currentLevel);
-    return;
-  }
+  if (!loadLevel(currentLevel)) { console.error('无法加载关卡', currentLevel); return; }
 
-  lives = 3;
-  hintsRemaining = 3;
-
-  boardState = [];
-  trialState = [];
+  lives = 3; hintsRemaining = 3;
+  boardState = []; trialState = [];
   for (var r = 0; r < GRID_SIZE; r++) {
     var bsRow = [], tsRow = [];
     for (var c = 0; c < GRID_SIZE; c++) { bsRow.push(0); tsRow.push(0); }
-    boardState.push(bsRow);
-    trialState.push(tsRow);
+    boardState.push(bsRow); trialState.push(tsRow);
   }
   for (var gi = 0; gi < givenCows.length; gi++) {
     var gr = givenCows[gi][0], gc = givenCows[gi][1];
-    boardState[gr][gc] = 1;
-    trialState[gr][gc] = 1;
+    boardState[gr][gc] = 1; trialState[gr][gc] = 1;
   }
 
   currentTool = 'cow';
@@ -286,16 +305,13 @@ function newPuzzle() {
 function updateUI() {
   document.getElementById('toolCow').classList.toggle('active', currentTool === 'cow');
   document.getElementById('toolX').classList.toggle('active', currentTool === 'x');
-
   var hearts = document.getElementById('lives').children;
   for (var i = 0; i < 3; i++) hearts[i].classList.toggle('lost', i >= lives);
-
   var placed = 0;
   for (var r = 0; r < GRID_SIZE; r++)
     for (var c = 0; c < GRID_SIZE; c++)
       if (trialState[r][c] === 1 || trialState[r][c] === 3) placed++;
   document.getElementById('remainCount').textContent = Math.max(0, COW_COUNT - placed);
-
   document.getElementById('hintCount').textContent = hintsRemaining;
   document.getElementById('hintBtn').style.opacity = hintsRemaining <= 0 ? '0.5' : '1';
 }
@@ -308,11 +324,9 @@ function clearTrial() {
   for (var r = 0; r < GRID_SIZE; r++)
     for (var c = 0; c < GRID_SIZE; c++)
       if (!isGivenCow(r, c)) trialState[r][c] = boardState[r][c];
-  renderBoard();
-  updateUI();
+  renderBoard(); updateUI();
 }
 
-// ============ 确认摆放 ============
 function confirmPlacement() {
   var trialCows = [], trialXs = [];
   for (var r = 0; r < GRID_SIZE; r++) {
@@ -321,92 +335,54 @@ function confirmPlacement() {
       if (trialState[r][c] === 4) trialXs.push([r, c]);
     }
   }
-
-  var errors = [];
-  var errorCells = [];
+  var errors = [], errorCells = [];
   var allCows = givenCows.slice();
-
   for (var ci = 0; ci < trialCows.length; ci++) allCows.push(trialCows[ci]);
 
-  if (allCows.length !== COW_COUNT) {
-    errors.push('需要放置' + COW_COUNT + '头牛，当前有' + allCows.length + '头');
-  }
+  if (allCows.length !== COW_COUNT) errors.push('需要放置' + COW_COUNT + '头牛，当前有' + allCows.length + '头');
 
   for (var r = 0; r < GRID_SIZE; r++) {
     var count = 0;
     for (var ai = 0; ai < allCows.length; ai++) if (allCows[ai][0] === r) count++;
-    if (count !== 1) {
-      errors.push('第' + (r+1) + '行有' + count + '头牛');
-      for (var ai = 0; ai < allCows.length; ai++) if (allCows[ai][0] === r) errorCells.push([allCows[ai][0], allCows[ai][1]]);
-    }
+    if (count !== 1) { errors.push('第' + (r+1) + '行有' + count + '头牛'); for (var ai = 0; ai < allCows.length; ai++) if (allCows[ai][0] === r) errorCells.push([allCows[ai][0], allCows[ai][1]]); }
   }
-
   for (var c = 0; c < GRID_SIZE; c++) {
     var count = 0;
     for (var ai = 0; ai < allCows.length; ai++) if (allCows[ai][1] === c) count++;
-    if (count !== 1) {
-      errors.push('第' + (c+1) + '列有' + count + '头牛');
-      for (var ai = 0; ai < allCows.length; ai++) if (allCows[ai][1] === c) errorCells.push([allCows[ai][0], allCows[ai][1]]);
-    }
+    if (count !== 1) { errors.push('第' + (c+1) + '列有' + count + '头牛'); for (var ai = 0; ai < allCows.length; ai++) if (allCows[ai][1] === c) errorCells.push([allCows[ai][0], allCows[ai][1]]); }
   }
-
   for (var i = 0; i < allCows.length; i++) {
     for (var j = i + 1; j < allCows.length; j++) {
       var r1 = allCows[i][0], c1 = allCows[i][1];
       var r2 = allCows[j][0], c2 = allCows[j][1];
       if (Math.abs(r1 - r2) <= 1 && Math.abs(c1 - c2) <= 1) {
-        errors.push('牛牛相邻了');
-        errorCells.push([r1, c1], [r2, c2]);
-        break;
+        errors.push('牛牛相邻了'); errorCells.push([r1, c1], [r2, c2]); break;
       }
     }
     if (errors.length > 0) break;
   }
-
   var regionCount = {};
   for (var ai = 0; ai < allCows.length; ai++) {
     var rr = allCows[ai][0], cc = allCows[ai][1];
     var rid = regionMap[rr][cc];
-    if (regionCount[rid]) {
-      errors.push('同颜色区域有多头牛');
-      for (var bi = 0; bi < allCows.length; bi++) {
-        var br = allCows[bi][0], bc = allCows[bi][1];
-        if (regionMap[br][bc] === rid) errorCells.push([br, bc]);
-      }
-      break;
-    }
+    if (regionCount[rid]) { errors.push('同颜色区域有多头牛'); for (var bi = 0; bi < allCows.length; bi++) { var br = allCows[bi][0], bc = allCows[bi][1]; if (regionMap[br][bc] === rid) errorCells.push([br, bc]); } break; }
     regionCount[rid] = true;
   }
-
   for (var xi = 0; xi < trialXs.length; xi++) {
     var xr = trialXs[xi][0], xc = trialXs[xi][1];
     var onCow = false;
-    for (var ai = 0; ai < allCows.length; ai++) {
-      if (allCows[ai][0] === xr && allCows[ai][1] === xc) { onCow = true; break; }
-    }
-    if (onCow) {
-      errors.push('第' + (xr+1) + '行第' + (xc+1) + '列不能打叉（这里已经有牛）');
-      errorCells.push([xr, xc]);
-    }
+    for (var ai = 0; ai < allCows.length; ai++) if (allCows[ai][0] === xr && allCows[ai][1] === xc) { onCow = true; break; }
+    if (onCow) { errors.push('第' + (xr+1) + '行第' + (xc+1) + '列不能打叉（这里已经有牛）'); errorCells.push([xr, xc]); }
   }
 
   if (errors.length > 0) {
-    showErrorToast(errors.join('\n'));
-    showBomb();
-    flashErrorCells(errorCells);
-    loseLife();
-    return;
+    showErrorToast(errors.join('\n')); showBomb(); flashErrorCells(errorCells); loseLife(); return;
   }
 
   for (var ci = 0; ci < trialCows.length; ci++) boardState[trialCows[ci][0]][trialCows[ci][1]] = 1;
   for (var ci = 0; ci < trialXs.length; ci++) boardState[trialXs[ci][0]][trialXs[ci][1]] = 2;
-  for (var r = 0; r < GRID_SIZE; r++)
-    for (var c = 0; c < GRID_SIZE; c++)
-      trialState[r][c] = boardState[r][c];
-
-  renderBoard();
-  updateUI();
-  checkWin();
+  for (var r = 0; r < GRID_SIZE; r++) for (var c = 0; c < GRID_SIZE; c++) trialState[r][c] = boardState[r][c];
+  renderBoard(); updateUI(); checkWin();
 }
 
 function flashErrorCells(cells) {
@@ -421,129 +397,74 @@ function flashErrorCells(cells) {
 
 function showErrorToast(msg) {
   var toast = document.getElementById('errorToast');
-  toast.textContent = msg;
-  toast.classList.add('show');
+  toast.textContent = msg; toast.classList.add('show');
   setTimeout(function() { toast.classList.remove('show'); }, 2000);
 }
 
-// ============ 渲染棋盘 ============
 function renderBoard() {
-  var board = document.getElementById('board');
-  board.innerHTML = '';
+  var board = document.getElementById('board'); board.innerHTML = '';
   for (var r = 0; r < GRID_SIZE; r++) {
     for (var c = 0; c < GRID_SIZE; c++) {
-      var cell = document.createElement('div');
-      cell.className = 'cell';
+      var cell = document.createElement('div'); cell.className = 'cell';
       var rid = regionMap[r][c];
       cell.style.backgroundColor = REGION_COLORS[rid % REGION_COLORS.length];
       if (isGivenCow(r, c)) cell.classList.add('given');
-
       var s = trialState[r][c];
-      if (s === 1 || s === 3) {
-        cell.textContent = '\u{1F42E}';
-        if (s === 3) cell.classList.add('trial');
-      } else if (s === 2 || s === 4) {
-        cell.textContent = '\u274E\uFE0F';
-        cell.style.color = '#FF5252';
-        cell.style.fontWeight = '900';
-        cell.style.fontSize = '16px';
-        if (s === 4) cell.classList.add('trial');
-      }
-
-      cell.dataset.row = r;
-      cell.dataset.col = c;
-      cell.addEventListener('click', (function(rr, cc) {
-        return function() { handleClick(rr, cc); };
-      })(r, c));
+      if (s === 1 || s === 3) { cell.textContent = '\u{1F42E}'; if (s === 3) cell.classList.add('trial'); }
+      else if (s === 2 || s === 4) { cell.textContent = '\u274E\uFE0F'; cell.style.color = '#FF5252'; cell.style.fontWeight = '900'; cell.style.fontSize = '16px'; if (s === 4) cell.classList.add('trial'); }
+      cell.dataset.row = r; cell.dataset.col = c;
+      cell.addEventListener('click', (function(rr, cc) { return function() { handleClick(rr, cc); }; })(r, c));
       board.appendChild(cell);
     }
   }
 }
 
-// ============ 点击 ============
 function handleClick(r, c) {
   if (isGivenCow(r, c)) return;
-
-  if (currentTool === 'cow') {
-    trialState[r][c] = trialState[r][c] === 3 ? 0 : 3;
-  } else {
-    trialState[r][c] = trialState[r][c] === 4 ? 0 : 4;
-  }
-  renderBoard();
-  updateUI();
+  if (currentTool === 'cow') { trialState[r][c] = trialState[r][c] === 3 ? 0 : 3; }
+  else { trialState[r][c] = trialState[r][c] === 4 ? 0 : 4; }
+  renderBoard(); updateUI();
 }
 
-// ============ 提示 ============
 function useHint() {
   if (hintsRemaining <= 0) return;
   var candidates = [];
   for (var r = 0; r < GRID_SIZE; r++)
     for (var c = 0; c < GRID_SIZE; c++)
-      if (!isGivenCow(r, c) && trialState[r][c] === 0)
-        candidates.push({r: r, c: c, isCow: solution[r][c]});
-
+      if (!isGivenCow(r, c) && trialState[r][c] === 0) candidates.push({r:r, c:c, isCow:solution[r][c]});
   if (candidates.length === 0) return;
   var cowCandidates = [];
   for (var ci = 0; ci < candidates.length; ci++) if (candidates[ci].isCow) cowCandidates.push(candidates[ci]);
-  var pick;
-  if (cowCandidates.length > 0) {
-    pick = cowCandidates[Math.floor(Math.random() * cowCandidates.length)];
-  } else {
-    pick = candidates[Math.floor(Math.random() * candidates.length)];
-  }
-
-  trialState[pick.r][pick.c] = pick.isCow ? 3 : 4;
-  hintsRemaining--;
-
+  var pick = cowCandidates.length > 0 ? cowCandidates[Math.floor(Math.random() * cowCandidates.length)] : candidates[Math.floor(Math.random() * candidates.length)];
+  trialState[pick.r][pick.c] = pick.isCow ? 3 : 4; hintsRemaining--;
   var cell = document.querySelector('.cell[data-row="' + pick.r + '"][data-col="' + pick.c + '"]');
   if (cell) { cell.classList.add('hint-glow'); setTimeout(function(cl) { return function() { cl.classList.remove('hint-glow'); }; }(cell), 1200); }
-
-  renderBoard();
-  updateUI();
+  renderBoard(); updateUI();
 }
 
-// ============ 胜利检查 ============
 function checkWin() {
   var placedCows = [];
-  for (var r = 0; r < GRID_SIZE; r++)
-    for (var c = 0; c < GRID_SIZE; c++)
-      if (boardState[r][c] === 1) placedCows.push([r, c]);
-
+  for (var r = 0; r < GRID_SIZE; r++) for (var c = 0; c < GRID_SIZE; c++) if (boardState[r][c] === 1) placedCows.push([r, c]);
   if (placedCows.length !== COW_COUNT) return;
-
   var rset = new Set(), cset = new Set();
-  for (var pi = 0; pi < placedCows.length; pi++) {
-    var pr = placedCows[pi][0], pc = placedCows[pi][1];
-    if (rset.has(pr) || cset.has(pc)) return;
-    rset.add(pr); cset.add(pc);
-  }
-  for (var i = 0; i < placedCows.length; i++)
-    for (var j = i + 1; j < placedCows.length; j++)
-      if (Math.abs(placedCows[i][0] - placedCows[j][0]) <= 1 && Math.abs(placedCows[i][1] - placedCows[j][1]) <= 1) return;
-  var ridSet = new Set();
-  for (var pi = 0; pi < placedCows.length; pi++) {
-    var pr = placedCows[pi][0], pc = placedCows[pi][1];
-    var rid = regionMap[pr][pc];
-    if (ridSet.has(rid)) return;
-    ridSet.add(rid);
-  }
+  for (var pi = 0; pi < placedCows.length; pi++) { var pr = placedCows[pi][0], pc = placedCows[pi][1]; if (rset.has(pr) || cset.has(pc)) return; rset.add(pr); cset.add(pc); }
+  for (var i = 0; i < placedCows.length; i++) for (var j = i + 1; j < placedCows.length; j++) if (Math.abs(placedCows[i][0] - placedCows[j][0]) <= 1 && Math.abs(placedCows[i][1] - placedCows[j][1]) <= 1) return;
+  var ridSet = new Set(); for (var pi = 0; pi < placedCows.length; pi++) { var pr = placedCows[pi][0], pc = placedCows[pi][1]; var rid = regionMap[pr][pc]; if (ridSet.has(rid)) return; ridSet.add(rid); }
   winGame();
 }
 
 function loseLife() {
-  lives--;
-  updateUI();
-  var cow = document.getElementById('cowIcon');
-  cow.classList.add('angry');
+  lives--; updateUI();
+  var cow = document.getElementById('cowIcon'); cow.classList.add('angry');
   setTimeout(function() { cow.classList.remove('angry'); }, 500);
   if (lives <= 0) setTimeout(function() { alert('游戏结束！'); newPuzzle(); }, 800);
 }
 
 function winGame() {
-  coins += 100;
-  document.getElementById('coinsCount').textContent = coins;
+  coins += 100; document.getElementById('coinsCount').textContent = coins;
+  var tierName = TIER_NAMES[currentTier];
   if (currentLevel < TOTAL_LEVELS) {
-    document.getElementById('winMessage').textContent = '太棒了！第' + currentLevel + '关完成 +100金币';
+    document.getElementById('winMessage').textContent = '太棒了！' + tierName + '第' + ((currentLevel - 1) % TIER_LEVELS_PER + 1) + '关完成 +100金币';
     document.getElementById('winOverlay').classList.add('show');
     currentLevel++;
   } else {
@@ -551,23 +472,29 @@ function winGame() {
     document.getElementById('winOverlay').classList.add('show');
     currentLevel = 1;
   }
-  document.getElementById('levelNum').textContent = currentLevel;
+}
+
+function nextLevel() {
+  document.getElementById('winOverlay').classList.remove('show');
+  var newTier = Math.floor((currentLevel - 1) / TIER_LEVELS_PER);
+  if (newTier !== currentTier) {
+    currentTier = newTier;
+    var btns = document.querySelectorAll('.tier-btn');
+    for (var i = 0; i < btns.length; i++) btns[i].className = 'tier-btn';
+    btns[currentTier].className = 'tier-btn ' + ['active-easy','active-medium','active-hard','active-master'][currentTier];
+  }
+  newPuzzle();
 }
 
 function isGivenCow(r, c) {
   for (var gi = 0; gi < givenCows.length; gi++) if (givenCows[gi][0] === r && givenCows[gi][1] === c) return true;
   return false;
 }
-function showBomb() {
-  var ov = document.getElementById('bombOverlay');
-  ov.classList.add('show');
-  setTimeout(function() { ov.classList.remove('show'); }, 600);
-}
+function showBomb() { var ov = document.getElementById('bombOverlay'); ov.classList.add('show'); setTimeout(function() { ov.classList.remove('show'); }, 600); }
 
-// ============ 入口 ============
 document.addEventListener('DOMContentLoaded', async function() {
   var ok = await loadLevelsData();
-  if (ok) newPuzzle();
+  if (ok) { currentLevel = 1; currentTier = 0; newPuzzle(); }
 });
 </script>
 </body>
