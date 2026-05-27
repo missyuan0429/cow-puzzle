@@ -297,7 +297,12 @@ function generatePuzzle() {
       // 按固定顺序尝试牛位
       for (let [gr, gc] of answerPositions) {
         // 检查：其他解在这个位置都没有牛 → 该已知牛唯一确定答案
-        let others = allSolutions.filter(s => s !== answer);
+        let others = allSolutions.filter(s => {
+          for (let r = 0; r < GRID_SIZE; r++)
+            for (let c = 0; c < GRID_SIZE; c++)
+              if (s[r][c] !== answer[r][c]) return true;
+          return false;
+        });
         let isUnique = others.every(s => !s[gr][gc]);
         if (isUnique) {
           regionMap = map;
@@ -321,7 +326,12 @@ function generatePuzzle() {
       for (let c = 0; c < GRID_SIZE; c++)
         if (answer[r][c]) pos.push([r, c]);
     for (let [gr, gc] of pos) {
-      let others = all.filter(s => s !== answer);
+      let others = all.filter(s => {
+        for (let r = 0; r < GRID_SIZE; r++)
+          for (let c = 0; c < GRID_SIZE; c++)
+            if (s[r][c] !== answer[r][c]) return true;
+        return false;
+      });
       if (others.every(s => !s[gr][gc])) {
         return { solution: answer, givenCows: [[gr, gc]] };
       }
