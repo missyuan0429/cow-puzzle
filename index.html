@@ -277,26 +277,25 @@ function generatePuzzle() {
   let eligible = getEligiblePresets(currentLevel);
   console.log('eligible presets:', eligible);
 
-  // 尝试所有候选预设，找能用恰好1只已知牛唯一确定的题目
-  let shuffled = eligible.sort(() => Math.random() - 0.5);
-  for (let p of shuffled) {
+  // 按关卡号轮流使用不同预设，保证每关颜色布局不同
+  let startIdx = (currentLevel - 1) % eligible.length;
+  for (let i = 0; i < eligible.length; i++) {
+    let p = eligible[(startIdx + i) % eligible.length];
     console.log('trying preset', p);
     let map = REGION_PRESETS[p].map(row => [...row]);
     let allSolutions = findAllSolutions(map);
     console.log('allSolutions count:', allSolutions.length);
     if (allSolutions.length === 0) { console.log('no solutions, skip'); continue; }
 
-    // 随机打乱解，逐个尝试
-    let shuffledSolutions = [...allSolutions].sort(() => Math.random() - 0.5);
-    for (let answer of shuffledSolutions) {
+    // 按固定顺序尝试解，保证可重复性
+    for (let answer of allSolutions) {
       let answerPositions = [];
       for (let r = 0; r < GRID_SIZE; r++)
         for (let c = 0; c < GRID_SIZE; c++)
           if (answer[r][c]) answerPositions.push([r, c]);
 
-      // 随机打乱6个牛位，逐个尝试作为唯一已知牛
-      let shuffledPositions = [...answerPositions].sort(() => Math.random() - 0.5);
-      for (let [gr, gc] of shuffledPositions) {
+      // 按固定顺序尝试牛位
+      for (let [gr, gc] of answerPositions) {
         // 检查：其他解在这个位置都没有牛 → 该已知牛唯一确定答案
         let others = allSolutions.filter(s => s !== answer);
         let isUnique = others.every(s => !s[gr][gc]);
@@ -316,12 +315,12 @@ function generatePuzzle() {
   regionPresetIdx = 0;
   regionMap = REGION_PRESETS[0].map(row => [...row]);
   let all = findAllSolutions(regionMap);
-  for (let answer of all.sort(() => Math.random() - 0.5)) {
+  for (let answer of all) {
     let pos = [];
     for (let r = 0; r < GRID_SIZE; r++)
       for (let c = 0; c < GRID_SIZE; c++)
         if (answer[r][c]) pos.push([r, c]);
-    for (let [gr, gc] of pos.sort(() => Math.random() - 0.5)) {
+    for (let [gr, gc] of pos) {
       let others = all.filter(s => s !== answer);
       if (others.every(s => !s[gr][gc])) {
         return { solution: answer, givenCows: [[gr, gc]] };
