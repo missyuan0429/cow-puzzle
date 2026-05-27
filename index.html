@@ -295,12 +295,12 @@ function computeMinimalGivens(answer, allSolutions) {
   let givens = [];
 
   while (remaining.length > 0) {
-    let bestPos = null, bestCount = Infinity;
+    let bestPos = null, bestCount = -1;
     for (let p of answerPositions) {
       let key = `${p[0]},${p[1]}`;
       if (givens.some(g => g[0] === p[0] && g[1] === p[1])) continue;
       let count = remaining.filter(s => s.has(key)).length;
-      if (count < bestCount) { bestCount = count; bestPos = p; }
+      if (count > bestCount) { bestCount = count; bestPos = p; }
     }
     if (!bestPos) break;
     givens.push(bestPos);
