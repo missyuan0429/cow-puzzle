@@ -271,52 +271,13 @@ function findAllSolutions(map) {
   return solutions;
 }
 
-// ============ 计算最少已知牛使解唯一 ============
-function computeMinimalGivens(answer, allSolutions) {
-  let answerPositions = [];
-  for (let r = 0; r < GRID_SIZE; r++)
-    for (let c = 0; c < GRID_SIZE; c++)
-      if (answer[r][c]) answerPositions.push([r, c]);
-
-  let others = allSolutions.filter(s => s !== answer);
-  if (others.length === 0) return [];
-
-  // 每个alternate解的牛位集合（字符串key）
-  let otherSets = others.map(sol => {
-    let set = new Set();
-    for (let r = 0; r < GRID_SIZE; r++)
-      for (let c = 0; c < GRID_SIZE; c++)
-        if (sol[r][c]) set.add(`${r},${c}`);
-    return set;
-  });
-
-  // 贪心：每次选能排除最多alternate解的答案牛位
-  let remaining = [...otherSets];
-  let givens = [];
-
-  while (remaining.length > 0) {
-    let bestPos = null, bestCount = -1;
-    for (let p of answerPositions) {
-      let key = `${p[0]},${p[1]}`;
-      if (givens.some(g => g[0] === p[0] && g[1] === p[1])) continue;
-      let count = remaining.filter(s => s.has(key)).length;
-      if (count > bestCount) { bestCount = count; bestPos = p; }
-    }
-    if (!bestPos) break;
-    givens.push(bestPos);
-    remaining = remaining.filter(s => !s.has(`${bestPos[0]},${bestPos[1]}`));
-  }
-
-  return givens;
-}
-
-// ============ 生成题目（唯一解 + 最少已知牛） ============
+// ============ 生成题目（恰好1只已知牛 + 唯一解） ============
 function generatePuzzle() {
   console.log('generatePuzzle called, level:', currentLevel);
   let eligible = getEligiblePresets(currentLevel);
   console.log('eligible presets:', eligible);
 
-  // 尝试所有候选预设，选第一个可生成唯一解的
+  // 尝试所有候选预设，找能用恰好1只已知牛唯一确定的题目
   let shuffled = eligible.sort(() => Math.random() - 0.5);
   for (let p of shuffled) {
     console.log('trying preset', p);
@@ -325,40 +286,55 @@ function generatePuzzle() {
     console.log('allSolutions count:', allSolutions.length);
     if (allSolutions.length === 0) { console.log('no solutions, skip'); continue; }
 
-    // 随机选一个解作为标准答案
-    let answer = allSolutions[Math.floor(Math.random() * allSolutions.length)];
-    let givens = computeMinimalGivens(answer, allSolutions);
-    console.log('givens count:', givens.length);
-
-    // 保证至少有1个已知牛
-    if (givens.length === 0) {
-      let pos = [];
+    // 随机打乱解，逐个尝试
+    let shuffledSolutions = [...allSolutions].sort(() => Math.random() - 0.5);
+    for (let answer of shuffledSolutions) {
+      let answerPositions = [];
       for (let r = 0; r < GRID_SIZE; r++)
         for (let c = 0; c < GRID_SIZE; c++)
-          if (answer[r][c]) pos.push([r, c]);
-      givens = [pos[Math.floor(Math.random() * pos.length)]];
-    }
+          if (answer[r][c]) answerPositions.push([r, c]);
 
-    regionMap = map;
-    regionPresetIdx = p;
-    console.log('SUCCESS: preset', p, 'givens:', JSON.stringify(givens));
-    return { solution: answer, givenCows: givens };
+      // 随机打乱6个牛位，逐个尝试作为唯一已知牛
+      let shuffledPositions = [...answerPositions].sort(() => Math.random() - 0.5);
+      for (let [gr, gc] of shuffledPositions) {
+        // 检查：其他解在这个位置都没有牛 → 该已知牛唯一确定答案
+        let others = allSolutions.filter(s => s !== answer);
+        let isUnique = others.every(s => !s[gr][gc]);
+        if (isUnique) {
+          regionMap = map;
+          regionPresetIdx = p;
+          console.log('SUCCESS: preset', p, 'given:', [gr, gc]);
+          return { solution: answer, givenCows: [[gr, gc]] };
+        }
+      }
+    }
+    console.log('preset', p, 'cannot achieve unique with 1 given cow');
   }
 
+  // 保底：纵向分区暴力尝试
   console.log('FALLBACK triggered');
-  // 保底：纵向分区一定有解
   regionPresetIdx = 0;
   regionMap = REGION_PRESETS[0].map(row => [...row]);
   let all = findAllSolutions(regionMap);
-  console.log('fallback solutions:', all.length);
-  let ans = all[Math.floor(Math.random() * all.length)];
-  let gv = computeMinimalGivens(ans, all);
-  if (gv.length === 0) {
+  for (let answer of all.sort(() => Math.random() - 0.5)) {
+    let pos = [];
     for (let r = 0; r < GRID_SIZE; r++)
       for (let c = 0; c < GRID_SIZE; c++)
-        if (ans[r][c]) { gv = [[r, c]]; break; }
+        if (answer[r][c]) pos.push([r, c]);
+    for (let [gr, gc] of pos.sort(() => Math.random() - 0.5)) {
+      let others = all.filter(s => s !== answer);
+      if (others.every(s => !s[gr][gc])) {
+        return { solution: answer, givenCows: [[gr, gc]] };
+      }
+    }
   }
-  return { solution: ans, givenCows: gv };
+  // 终极保底
+  let ans = all[0];
+  let pp = [];
+  for (let r = 0; r < GRID_SIZE; r++)
+    for (let c = 0; c < GRID_SIZE; c++)
+      if (ans[r][c]) pp.push([r, c]);
+  return { solution: ans, givenCows: [pp[0]] };
 }
 
 // ============ 初始化 ============
