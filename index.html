@@ -96,6 +96,12 @@
   .error-toast.show { display: block; animation: toastIn 0.3s ease; }
   @keyframes toastIn { from{opacity:0;transform:translate(-50%,-50%) scale(0.8)} to{opacity:1;transform:translate(-50%,-50%) scale(1)} }
 
+  .loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.92); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+  .loading-card { text-align: center; padding: 30px; }
+  .loading-spinner { width: 44px; height: 44px; border: 4px solid #EEE; border-top-color: #FF9800; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 15px; color: #888; font-weight: 500; }
+
   @media (max-width: 360px) {
     .game-container { padding: 10px 12px 16px; }
     .rule-item { font-size: 10px; padding: 8px 4px; }
@@ -108,26 +114,26 @@
 <div class="game-container">
   <div class="top-bar">
     <div class="top-left">
-      <button class="settings-btn">⚙️</button>
+      <button class="settings-btn">&#9881;&#65039;</button>
       <div class="level-badge">第 <span id="levelNum">1</span> 关</div>
     </div>
     <div class="top-center">
       <button class="new-game-btn" onclick="newPuzzle()">新一局</button>
     </div>
     <div class="top-right">
-      <div class="coins">🪙 <span id="coinsCount">0</span></div>
-      <div class="lives" id="lives"><span class="heart">❤️</span><span class="heart">❤️</span><span class="heart">❤️</span></div>
+      <div class="coins">&#x1F4B0; <span id="coinsCount">0</span></div>
+      <div class="lives" id="lives"><span class="heart">&#10084;&#65039;</span><span class="heart">&#10084;&#65039;</span><span class="heart">&#10084;&#65039;</span></div>
     </div>
   </div>
 
   <div class="rules-card">
-    <div class="rule-item"><span class="rule-icon">🎨</span>每种颜色<br/>1头小牛</div>
-    <div class="rule-item"><span class="rule-icon">↔️</span>每行,每列均有<br/>且仅有1头小牛</div>
-    <div class="rule-item"><span class="rule-icon">🚫</span>小牛不能相邻<br/>（包括对角线）</div>
+    <div class="rule-item"><span class="rule-icon">&#x1F3A8;</span>每种颜色<br/>1头小牛</div>
+    <div class="rule-item"><span class="rule-icon">&#x2194;&#xFE0F;</span>每行,每列均有<br/>且仅有1头小牛</div>
+    <div class="rule-item"><span class="rule-icon">&#x1F6AB;</span>小牛不能相邻<br/>（包括对角线）</div>
   </div>
 
   <div class="cow-hint-area">
-    <div class="cow-icon" id="cowIcon">🐮</div>
+    <div class="cow-icon" id="cowIcon">&#x1F42E;</div>
     <div class="remaining-badge">剩余小牛：<span class="remaining-num" id="remainCount">6</span></div>
   </div>
 
@@ -136,21 +142,28 @@
   <button class="confirm-btn" id="confirmBtn" onclick="confirmPlacement()">确认摆放</button>
 
   <div class="bottom-controls">
-    <button class="clear-btn" onclick="clearTrial()">🗑️</button>
+    <button class="clear-btn" onclick="clearTrial()">&#x1F5D1;&#xFE0F;</button>
     <div class="tool-cards">
-      <div class="tool-card active" id="toolCow" onclick="setTool('cow')"><div class="tool-icon">🐮</div><div class="tool-label">放牛牛</div></div>
-      <div class="tool-card" id="toolX" onclick="setTool('x')"><div class="tool-icon">✖️</div><div class="tool-label">打叉子</div></div>
+      <div class="tool-card active" id="toolCow" onclick="setTool('cow')"><div class="tool-icon">&#x1F42E;</div><div class="tool-label">放牛牛</div></div>
+      <div class="tool-card" id="toolX" onclick="setTool('x')"><div class="tool-icon">&#x2716;&#xFE0F;</div><div class="tool-label">打叉子</div></div>
     </div>
-    <button class="hint-card" id="hintBtn" onclick="useHint()"><div class="hint-icon">💡</div><div class="hint-label">提示 <span id="hintCount">3</span></div></button>
+    <button class="hint-card" id="hintBtn" onclick="useHint()"><div class="hint-icon">&#x1F4A1;</div><div class="hint-label">提示 <span id="hintCount">3</span></div></button>
   </div>
 </div>
 
-<div class="bomb-overlay" id="bombOverlay"><div class="bomb-emoji">💣</div></div>
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-card">
+    <div class="loading-spinner"></div>
+    <div class="loading-text" id="loadingText">加载关卡数据中...</div>
+  </div>
+</div>
+
+<div class="bomb-overlay" id="bombOverlay"><div class="bomb-emoji">&#x1F4A3;</div></div>
 <div class="error-toast" id="errorToast"></div>
 
 <div class="win-overlay" id="winOverlay">
   <div class="win-card">
-    <div class="win-emoji">🎉🐮🎉</div>
+    <div class="win-emoji">&#x1F389;&#x1F42E;&#x1F389;</div>
     <div class="win-title">找到所有牛牛啦！</div>
     <div class="win-message" id="winMessage">太棒了！第1关完成</div>
     <button class="win-btn" onclick="newPuzzle()">下一关</button>
@@ -160,240 +173,112 @@
 <script>
 const GRID_SIZE = 6;
 const COW_COUNT = 6;
-
-// 预定义颜色区域（不规则连通区域，每个区域恰好包含一个解牛位置）
-// 区域用数字 0~5 表示，共6个区域
-const REGION_PRESETS = [
-  // 预设0：不规则（9解，7个可1只已知牛）
-  [
-    [0,0,1,1,2,2],
-    [0,0,1,2,2,2],
-    [3,3,1,4,4,2],
-    [3,3,4,4,4,5],
-    [3,3,4,5,5,5],
-    [3,3,5,5,5,5],
-  ],
-  // 预设1：阶梯型（9解，6个可1只已知牛）
-  [
-    [0,0,1,1,2,2],
-    [0,1,1,2,2,3],
-    [1,1,2,2,3,3],
-    [2,2,3,3,4,4],
-    [3,3,4,4,5,5],
-    [3,4,4,5,5,5],
-  ],
-  // 预设2：蛇形（5解，5个可1只已知牛）
-  [
-    [0,0,0,1,1,2],
-    [0,3,1,1,2,2],
-    [3,3,1,4,2,2],
-    [3,3,4,4,4,5],
-    [3,5,4,4,5,5],
-    [5,5,5,5,5,5],
-  ],
-  // 预设3：Z字形（22解，3个可1只已知牛）
-  [
-    [0,0,0,0,1,1],
-    [0,0,2,1,1,1],
-    [2,2,2,3,1,1],
-    [2,2,3,3,3,4],
-    [5,3,3,3,4,4],
-    [5,5,5,4,4,4],
-  ],
-  // 预设4：棋盘交错（2解，2个可1只已知牛）
-  [
-    [0,1,0,1,2,3],
-    [1,0,1,2,3,2],
-    [0,1,2,3,2,3],
-    [4,2,3,4,5,4],
-    [2,4,5,4,5,5],
-    [4,5,4,5,5,4],
-  ],
-  // 预设5：X型（10解，7个可1只已知牛）
-  [
-    [0,0,0,1,2,2],
-    [0,0,1,1,2,2],
-    [3,3,1,2,2,5],
-    [3,3,3,4,4,5],
-    [3,3,4,4,5,5],
-    [4,4,4,5,5,5],
-  ],
-  // 预设6：碎片型（11解，5个可1只已知牛）
-  [
-    [0,0,0,1,1,1],
-    [2,0,3,1,4,1],
-    [2,2,3,3,4,4],
-    [2,3,3,4,4,5],
-    [2,5,3,4,5,5],
-    [5,5,5,5,5,5],
-  ],
-  // 预设7：斜切型（23解，3个可1只已知牛）
-  [
-    [0,0,0,1,2,3],
-    [0,0,1,1,2,3],
-    [0,1,1,2,2,3],
-    [4,1,2,3,3,3],
-    [4,4,5,5,5,3],
-    [4,4,5,5,5,5],
-  ],
-];
+const TOTAL_LEVELS = 1000;
 
 const REGION_COLORS = ['#FF8A8A','#8ECAE6','#FFE066','#95D5A2','#C8B6FF','#FFB74D'];
 
-let solution = [];
-let givenCows = [];
-let boardState = [];    // 0=空, 1=确认牛, 2=确认叉
-let trialState = [];    // 0=空, 3=尝试牛, 4=尝试叉
-let currentTool = 'cow';
-let lives = 3;
-let currentLevel = 1;
-let hintsRemaining = 3;
-let coins = 0;
-let regionMap = [];     // 当前关卡的6x6区域编号
-let regionPresetIdx = 0;
+var levelsData = null;
+var levelsLoaded = false;
+var solution = [];
+var givenCows = [];
+var boardState = [];
+var trialState = [];
+var currentTool = 'cow';
+var lives = 3;
+var currentLevel = 1;
+var hintsRemaining = 3;
+var coins = 0;
+var regionMap = [];
 
-// ============ 难度分级 ============
-function getEligiblePresets(level) {
-  if (level <= 3) return [3, 7, 6];       // 简单：22/23/11解，推理空间大
-  if (level <= 6) return [0, 1, 5];       // 中等：9/9/10解
-  if (level <= 9) return [2];              // 困难：5解
-  return [4];                              // 极难：2解
+// ============ 加载关卡数据 ============
+async function loadLevelsData() {
+  var overlay = document.getElementById('loadingOverlay');
+  var text = document.getElementById('loadingText');
+  overlay.style.display = 'flex';
+  try {
+    var resp = await fetch('levels.json');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    var data = await resp.json();
+    levelsData = data.levels;
+    levelsLoaded = true;
+    text.textContent = '关卡数据加载完成，共 ' + levelsData.length + ' 关';
+    console.log('关卡数据加载成功，共', levelsData.length, '关');
+    await new Promise(function(r) { setTimeout(r, 500); });
+    overlay.style.display = 'none';
+    return true;
+  } catch (e) {
+    console.error('加载关卡数据失败:', e);
+    text.textContent = '⚠️ 加载失败，请确保 levels.json 与 index.html 在同一目录';
+    return false;
+  }
 }
 
-// ============ 找出所有合法解 ============
-function findAllSolutions(map) {
-  let regionCells = {};
-  for (let r = 0; r < GRID_SIZE; r++)
-    for (let c = 0; c < GRID_SIZE; c++) {
-      let rid = map[r][c];
-      if (!regionCells[rid]) regionCells[rid] = [];
-      regionCells[rid].push([r, c]);
-    }
-
-  let solutions = [];
-
-  function backtrack(idx, selected, usedRows, usedCols) {
-    if (idx >= 6) {
-      let sol = Array.from({length: GRID_SIZE}, () => Array(GRID_SIZE).fill(false));
-      for (let [r, c] of selected) sol[r][c] = true;
-      solutions.push(sol);
-      return;
-    }
-    let rid = [0, 1, 2, 3, 4, 5][idx];
-    for (let [r, c] of regionCells[rid]) {
-      if (usedRows.has(r) || usedCols.has(c)) continue;
-      let adj = false;
-      for (let [sr, sc] of selected) {
-        if (Math.abs(r - sr) <= 1 && Math.abs(c - sc) <= 1) { adj = true; break; }
-      }
-      if (adj) continue;
-      usedRows.add(r); usedCols.add(c);
-      selected.push([r, c]);
-      backtrack(idx + 1, selected, usedRows, usedCols);
-      selected.pop();
-      usedRows.delete(r); usedCols.delete(c);
-    }
+// ============ 从 levels.json 读取当前关卡 ============
+function loadLevel(levelNum) {
+  if (!levelsLoaded || !levelsData) {
+    console.error('关卡数据未加载');
+    return null;
   }
+  var idx = levelNum - 1;
+  if (idx < 0 || idx >= levelsData.length) {
+    console.log('关卡超出范围，回到第1关');
+    currentLevel = 1;
+    idx = 0;
+  }
+  var level = levelsData[idx];
+  console.log('加载关卡', level.id, '难度', level.difficulty);
 
-  backtrack(0, [], new Set(), new Set());
-  return solutions;
+  regionMap = level.regions;
+
+  var kr = level.known_cow[0], kc = level.known_cow[1];
+  givenCows = [[kr, kc]];
+
+  var sol = [];
+  for (var i = 0; i < GRID_SIZE; i++) {
+    var row = [];
+    for (var j = 0; j < GRID_SIZE; j++) row.push(false);
+    sol.push(row);
+  }
+  for (var k = 0; k < level.solution.length; k++) {
+    var pos = level.solution[k];
+    sol[pos[0]][pos[1]] = true;
+  }
+  solution = sol;
+
+  return level;
 }
 
-// ============ 生成题目（1只已知牛 + 唯一解） ============
-function generatePuzzle() {
-  console.log('generatePuzzle called, level:', currentLevel);
-  let eligible = getEligiblePresets(currentLevel);
-  console.log('eligible presets:', eligible);
-
-  // 按关卡号轮流使用不同预设，保证每关颜色布局不同
-  let startIdx = (currentLevel - 1) % eligible.length;
-  for (let offset = 0; offset < eligible.length; offset++) {
-    let p = eligible[(startIdx + offset) % eligible.length];
-    console.log('trying preset', p);
-    let map = REGION_PRESETS[p].map(row => [...row]);
-    let allSolutions = findAllSolutions(map);
-    console.log('allSolutions count:', allSolutions.length);
-    if (allSolutions.length === 0) { console.log('no solutions, skip'); continue; }
-
-    // 所有预设都支持1只已知牛，直接找
-    for (let answer of allSolutions) {
-      let answerPositions = [];
-      for (let r = 0; r < GRID_SIZE; r++)
-        for (let c = 0; c < GRID_SIZE; c++)
-          if (answer[r][c]) answerPositions.push([r, c]);
-
-      for (let [gr, gc] of answerPositions) {
-        let others = allSolutions.filter(s => {
-          for (let r = 0; r < GRID_SIZE; r++)
-            for (let c = 0; c < GRID_SIZE; c++)
-              if (s[r][c] !== answer[r][c]) return true;
-          return false;
-        });
-        if (others.every(s => !s[gr][gc])) {
-          regionMap = map;
-          regionPresetIdx = p;
-          console.log('SUCCESS: preset', p, 'given:', [gr, gc]);
-          return { solution: answer, givenCows: [[gr, gc]] };
-        }
-      }
-    }
-    console.log('preset', p, 'unexpectedly failed to find 1-given solution');
-  }
-
-  // 保底：预设0一定有1只已知牛解
-  console.log('FALLBACK triggered');
-  regionPresetIdx = 0;
-  regionMap = REGION_PRESETS[0].map(row => [...row]);
-  let all = findAllSolutions(regionMap);
-  for (let answer of all) {
-    let pos = [];
-    for (let r = 0; r < GRID_SIZE; r++)
-      for (let c = 0; c < GRID_SIZE; c++)
-        if (answer[r][c]) pos.push([r, c]);
-    for (let [gr, gc] of pos) {
-      let others = all.filter(s => {
-        for (let r = 0; r < GRID_SIZE; r++)
-          for (let c = 0; c < GRID_SIZE; c++)
-            if (s[r][c] !== answer[r][c]) return true;
-        return false;
-      });
-      if (others.every(s => !s[gr][gc])) {
-        return { solution: answer, givenCows: [[gr, gc]] };
-      }
-    }
-  }
-  // 终极保底
-  let ans = all[0];
-  for (let r = 0; r < GRID_SIZE; r++)
-    for (let c = 0; c < GRID_SIZE; c++)
-      if (ans[r][c]) return { solution: ans, givenCows: [[r, c]] };
-  return { solution: ans, givenCows: [[0, 0]] };
-}
-
-// ============ 初始化 ============
+// ============ 新一局 ============
 function newPuzzle() {
   console.log('=== newPuzzle called, level:', currentLevel, '===');
   document.getElementById('winOverlay').classList.remove('show');
-  document.querySelectorAll('.cell.error-mark').forEach(el => el.classList.remove('error-mark'));
+  var errs = document.querySelectorAll('.cell.error-mark');
+  for (var ei = 0; ei < errs.length; ei++) errs[ei].classList.remove('error-mark');
+
+  if (!loadLevel(currentLevel)) {
+    console.error('无法加载关卡', currentLevel);
+    return;
+  }
+
   lives = 3;
   hintsRemaining = 3;
 
-  let puzzle = generatePuzzle();
-  solution = puzzle.solution;
-  givenCows = puzzle.givenCows;
-
-  console.log('solution count:', solution.filter(row => row.some(v => v)).length);
-  console.log('givenCows:', JSON.stringify(givenCows));
-  console.log('regionMap:', JSON.stringify(regionMap));
-
-  boardState = Array.from({length: GRID_SIZE}, () => Array(GRID_SIZE).fill(0));
-  trialState = Array.from({length: GRID_SIZE}, () => Array(GRID_SIZE).fill(0));
-  for (let [r, c] of givenCows) {
-    boardState[r][c] = 1;
-    trialState[r][c] = 1;
+  boardState = [];
+  trialState = [];
+  for (var r = 0; r < GRID_SIZE; r++) {
+    var bsRow = [], tsRow = [];
+    for (var c = 0; c < GRID_SIZE; c++) { bsRow.push(0); tsRow.push(0); }
+    boardState.push(bsRow);
+    trialState.push(tsRow);
+  }
+  for (var gi = 0; gi < givenCows.length; gi++) {
+    var gr = givenCows[gi][0], gc = givenCows[gi][1];
+    boardState[gr][gc] = 1;
+    trialState[gr][gc] = 1;
   }
 
   currentTool = 'cow';
+  document.getElementById('levelNum').textContent = currentLevel;
   updateUI();
   renderBoard();
 }
@@ -402,12 +287,12 @@ function updateUI() {
   document.getElementById('toolCow').classList.toggle('active', currentTool === 'cow');
   document.getElementById('toolX').classList.toggle('active', currentTool === 'x');
 
-  let hearts = document.getElementById('lives').children;
-  for (let i = 0; i < 3; i++) hearts[i].classList.toggle('lost', i >= lives);
+  var hearts = document.getElementById('lives').children;
+  for (var i = 0; i < 3; i++) hearts[i].classList.toggle('lost', i >= lives);
 
-  let placed = 0;
-  for (let r = 0; r < GRID_SIZE; r++)
-    for (let c = 0; c < GRID_SIZE; c++)
+  var placed = 0;
+  for (var r = 0; r < GRID_SIZE; r++)
+    for (var c = 0; c < GRID_SIZE; c++)
       if (trialState[r][c] === 1 || trialState[r][c] === 3) placed++;
   document.getElementById('remainCount').textContent = Math.max(0, COW_COUNT - placed);
 
@@ -418,107 +303,105 @@ function updateUI() {
 function setTool(tool) { currentTool = tool; updateUI(); }
 
 function clearTrial() {
-  // 清除红框标记
-  document.querySelectorAll('.cell.error-mark').forEach(el => el.classList.remove('error-mark'));
-  for (let r = 0; r < GRID_SIZE; r++)
-    for (let c = 0; c < GRID_SIZE; c++)
+  var errs = document.querySelectorAll('.cell.error-mark');
+  for (var ei = 0; ei < errs.length; ei++) errs[ei].classList.remove('error-mark');
+  for (var r = 0; r < GRID_SIZE; r++)
+    for (var c = 0; c < GRID_SIZE; c++)
       if (!isGivenCow(r, c)) trialState[r][c] = boardState[r][c];
   renderBoard();
   updateUI();
 }
 
-// ============ 确认摆放（核心） ============
+// ============ 确认摆放 ============
 function confirmPlacement() {
-  // 收集所有尝试的牛和叉
-  let trialCows = [], trialXs = [];
-  for (let r = 0; r < GRID_SIZE; r++) {
-    for (let c = 0; c < GRID_SIZE; c++) {
+  var trialCows = [], trialXs = [];
+  for (var r = 0; r < GRID_SIZE; r++) {
+    for (var c = 0; c < GRID_SIZE; c++) {
       if (trialState[r][c] === 3) trialCows.push([r, c]);
       if (trialState[r][c] === 4) trialXs.push([r, c]);
     }
   }
 
-  let errors = [];
-  let errorCells = [];
+  var errors = [];
+  var errorCells = [];
+  var allCows = givenCows.slice();
 
-  // 收集所有牛（包括已知牛+尝试牛）
-  let allCows = [...givenCows, ...trialCows];
-  
-  // 1. 检查牛的数量
+  for (var ci = 0; ci < trialCows.length; ci++) allCows.push(trialCows[ci]);
+
   if (allCows.length !== COW_COUNT) {
-    errors.push(`需要放置${COW_COUNT}头牛，当前有${allCows.length}头`);
+    errors.push('需要放置' + COW_COUNT + '头牛，当前有' + allCows.length + '头');
   }
-  
-  // 2. 检查每行每列
-  for (let r = 0; r < GRID_SIZE; r++) {
-    let count = allCows.filter(([rr]) => rr === r).length;
+
+  for (var r = 0; r < GRID_SIZE; r++) {
+    var count = 0;
+    for (var ai = 0; ai < allCows.length; ai++) if (allCows[ai][0] === r) count++;
     if (count !== 1) {
-      errors.push(`第${r+1}行有${count}头牛`);
-      // 标记该行所有牛
-      allCows.filter(([rr]) => rr === r).forEach(([rr, cc]) => errorCells.push([rr, cc]));
+      errors.push('第' + (r+1) + '行有' + count + '头牛');
+      for (var ai = 0; ai < allCows.length; ai++) if (allCows[ai][0] === r) errorCells.push([allCows[ai][0], allCows[ai][1]]);
     }
   }
-  
-  for (let c = 0; c < GRID_SIZE; c++) {
-    let count = allCows.filter(([, cc]) => cc === c).length;
+
+  for (var c = 0; c < GRID_SIZE; c++) {
+    var count = 0;
+    for (var ai = 0; ai < allCows.length; ai++) if (allCows[ai][1] === c) count++;
     if (count !== 1) {
-      errors.push(`第${c+1}列有${count}头牛`);
-      allCows.filter(([, cc]) => cc === c).forEach(([rr, cc]) => errorCells.push([rr, cc]));
+      errors.push('第' + (c+1) + '列有' + count + '头牛');
+      for (var ai = 0; ai < allCows.length; ai++) if (allCows[ai][1] === c) errorCells.push([allCows[ai][0], allCows[ai][1]]);
     }
   }
-  
-  // 3. 检查相邻（包括对角线）
-  for (let i = 0; i < allCows.length; i++) {
-    for (let j = i + 1; j < allCows.length; j++) {
-      let [r1, c1] = allCows[i];
-      let [r2, c2] = allCows[j];
+
+  for (var i = 0; i < allCows.length; i++) {
+    for (var j = i + 1; j < allCows.length; j++) {
+      var r1 = allCows[i][0], c1 = allCows[i][1];
+      var r2 = allCows[j][0], c2 = allCows[j][1];
       if (Math.abs(r1 - r2) <= 1 && Math.abs(c1 - c2) <= 1) {
-        errors.push(`牛牛相邻了`);
+        errors.push('牛牛相邻了');
         errorCells.push([r1, c1], [r2, c2]);
         break;
       }
     }
     if (errors.length > 0) break;
   }
-  
-  // 4. 检查颜色区域
-  let regionCount = {};
-  for (let [r, c] of allCows) {
-    let rid = regionMap[r][c];
+
+  var regionCount = {};
+  for (var ai = 0; ai < allCows.length; ai++) {
+    var rr = allCows[ai][0], cc = allCows[ai][1];
+    var rid = regionMap[rr][cc];
     if (regionCount[rid]) {
-      errors.push(`同颜色区域有多头牛`);
-      // 标记该区域所有牛
-      allCows.filter(([rr, cc]) => regionMap[rr][cc] === rid)
-        .forEach(([rr, cc]) => errorCells.push([rr, cc]));
+      errors.push('同颜色区域有多头牛');
+      for (var bi = 0; bi < allCows.length; bi++) {
+        var br = allCows[bi][0], bc = allCows[bi][1];
+        if (regionMap[br][bc] === rid) errorCells.push([br, bc]);
+      }
       break;
     }
     regionCount[rid] = true;
   }
-  
-  // 5. 检查叉子是否叉在牛上（如果有叉子）
-  for (let [r, c] of trialXs) {
-    if (allCows.some(([rr, cc]) => rr === r && cc === c)) {
-      errors.push(`第${r+1}行第${c+1}列不能打叉（这里已经有牛）`);
-      errorCells.push([r, c]);
+
+  for (var xi = 0; xi < trialXs.length; xi++) {
+    var xr = trialXs[xi][0], xc = trialXs[xi][1];
+    var onCow = false;
+    for (var ai = 0; ai < allCows.length; ai++) {
+      if (allCows[ai][0] === xr && allCows[ai][1] === xc) { onCow = true; break; }
+    }
+    if (onCow) {
+      errors.push('第' + (xr+1) + '行第' + (xc+1) + '列不能打叉（这里已经有牛）');
+      errorCells.push([xr, xc]);
     }
   }
 
   if (errors.length > 0) {
-    // 显示错误
     showErrorToast(errors.join('\n'));
     showBomb();
-    // 高亮错误格子
     flashErrorCells(errorCells);
     loseLife();
     return;
   }
 
-  // 全部正确，确认
-  for (let [r, c] of trialCows) boardState[r][c] = 1;
-  for (let [r, c] of trialXs) boardState[r][c] = 2;
-  // 同步 trialState
-  for (let r = 0; r < GRID_SIZE; r++)
-    for (let c = 0; c < GRID_SIZE; c++)
+  for (var ci = 0; ci < trialCows.length; ci++) boardState[trialCows[ci][0]][trialCows[ci][1]] = 1;
+  for (var ci = 0; ci < trialXs.length; ci++) boardState[trialXs[ci][0]][trialXs[ci][1]] = 2;
+  for (var r = 0; r < GRID_SIZE; r++)
+    for (var c = 0; c < GRID_SIZE; c++)
       trialState[r][c] = boardState[r][c];
 
   renderBoard();
@@ -527,40 +410,40 @@ function confirmPlacement() {
 }
 
 function flashErrorCells(cells) {
-  // 先清除所有旧的红框
-  document.querySelectorAll('.cell.error-mark').forEach(el => el.classList.remove('error-mark'));
-  // 给错误格加上持续红框
-  for (let [r, c] of cells) {
-    let cell = document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
+  var errs = document.querySelectorAll('.cell.error-mark');
+  for (var ei = 0; ei < errs.length; ei++) errs[ei].classList.remove('error-mark');
+  for (var i = 0; i < cells.length; i++) {
+    var r = cells[i][0], c = cells[i][1];
+    var cell = document.querySelector('.cell[data-row="' + r + '"][data-col="' + c + '"]');
     if (cell) cell.classList.add('error-mark');
   }
 }
 
 function showErrorToast(msg) {
-  let toast = document.getElementById('errorToast');
+  var toast = document.getElementById('errorToast');
   toast.textContent = msg;
   toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2000);
+  setTimeout(function() { toast.classList.remove('show'); }, 2000);
 }
 
-// ============ 渲染 ============
+// ============ 渲染棋盘 ============
 function renderBoard() {
-  let board = document.getElementById('board');
+  var board = document.getElementById('board');
   board.innerHTML = '';
-  for (let r = 0; r < GRID_SIZE; r++) {
-    for (let c = 0; c < GRID_SIZE; c++) {
-      let cell = document.createElement('div');
+  for (var r = 0; r < GRID_SIZE; r++) {
+    for (var c = 0; c < GRID_SIZE; c++) {
+      var cell = document.createElement('div');
       cell.className = 'cell';
-      let rid = regionMap[r][c];
+      var rid = regionMap[r][c];
       cell.style.backgroundColor = REGION_COLORS[rid % REGION_COLORS.length];
       if (isGivenCow(r, c)) cell.classList.add('given');
 
-      let s = trialState[r][c];
+      var s = trialState[r][c];
       if (s === 1 || s === 3) {
-        cell.textContent = '🐮';
+        cell.textContent = '\u{1F42E}';
         if (s === 3) cell.classList.add('trial');
       } else if (s === 2 || s === 4) {
-        cell.textContent = '✖️';
+        cell.textContent = '\u274E\uFE0F';
         cell.style.color = '#FF5252';
         cell.style.fontWeight = '900';
         cell.style.fontSize = '16px';
@@ -569,11 +452,12 @@ function renderBoard() {
 
       cell.dataset.row = r;
       cell.dataset.col = c;
-      cell.addEventListener('click', () => handleClick(r, c));
+      cell.addEventListener('click', (function(rr, cc) {
+        return function() { handleClick(rr, cc); };
+      })(r, c));
       board.appendChild(cell);
     }
   }
-  console.log('renderBoard called, regionMap:', JSON.stringify(regionMap));
 }
 
 // ============ 点击 ============
@@ -592,23 +476,27 @@ function handleClick(r, c) {
 // ============ 提示 ============
 function useHint() {
   if (hintsRemaining <= 0) return;
-  let candidates = [];
-  for (let r = 0; r < GRID_SIZE; r++)
-    for (let c = 0; c < GRID_SIZE; c++)
+  var candidates = [];
+  for (var r = 0; r < GRID_SIZE; r++)
+    for (var c = 0; c < GRID_SIZE; c++)
       if (!isGivenCow(r, c) && trialState[r][c] === 0)
-        candidates.push({r, c, isCow: solution[r][c]});
+        candidates.push({r: r, c: c, isCow: solution[r][c]});
 
   if (candidates.length === 0) return;
-  let cowCandidates = candidates.filter(c => c.isCow);
-  let pick = cowCandidates.length > 0
-    ? cowCandidates[Math.floor(Math.random() * cowCandidates.length)]
-    : candidates[Math.floor(Math.random() * candidates.length)];
+  var cowCandidates = [];
+  for (var ci = 0; ci < candidates.length; ci++) if (candidates[ci].isCow) cowCandidates.push(candidates[ci]);
+  var pick;
+  if (cowCandidates.length > 0) {
+    pick = cowCandidates[Math.floor(Math.random() * cowCandidates.length)];
+  } else {
+    pick = candidates[Math.floor(Math.random() * candidates.length)];
+  }
 
   trialState[pick.r][pick.c] = pick.isCow ? 3 : 4;
   hintsRemaining--;
 
-  let cell = document.querySelector(`.cell[data-row="${pick.r}"][data-col="${pick.c}"]`);
-  if (cell) { cell.classList.add('hint-glow'); setTimeout(() => cell.classList.remove('hint-glow'), 1200); }
+  var cell = document.querySelector('.cell[data-row="' + pick.r + '"][data-col="' + pick.c + '"]');
+  if (cell) { cell.classList.add('hint-glow'); setTimeout(function(cl) { return function() { cl.classList.remove('hint-glow'); }; }(cell), 1200); }
 
   renderBoard();
   updateUI();
@@ -616,27 +504,26 @@ function useHint() {
 
 // ============ 胜利检查 ============
 function checkWin() {
-  let placedCows = [];
-  for (let r = 0; r < GRID_SIZE; r++)
-    for (let c = 0; c < GRID_SIZE; c++)
+  var placedCows = [];
+  for (var r = 0; r < GRID_SIZE; r++)
+    for (var c = 0; c < GRID_SIZE; c++)
       if (boardState[r][c] === 1) placedCows.push([r, c]);
 
   if (placedCows.length !== COW_COUNT) return;
 
-  // 检查全部规则
-  let rset = new Set(), cset = new Set();
-  for (let [r, c] of placedCows) {
-    if (rset.has(r) || cset.has(c)) return; // 行列重复
-    rset.add(r); cset.add(c);
+  var rset = new Set(), cset = new Set();
+  for (var pi = 0; pi < placedCows.length; pi++) {
+    var pr = placedCows[pi][0], pc = placedCows[pi][1];
+    if (rset.has(pr) || cset.has(pc)) return;
+    rset.add(pr); cset.add(pc);
   }
-  // 检查相邻
-  for (let i = 0; i < placedCows.length; i++)
-    for (let j = i + 1; j < placedCows.length; j++)
+  for (var i = 0; i < placedCows.length; i++)
+    for (var j = i + 1; j < placedCows.length; j++)
       if (Math.abs(placedCows[i][0] - placedCows[j][0]) <= 1 && Math.abs(placedCows[i][1] - placedCows[j][1]) <= 1) return;
-  // 检查区域
-  let ridSet = new Set();
-  for (let [r, c] of placedCows) {
-    let rid = regionMap[r][c];
+  var ridSet = new Set();
+  for (var pi = 0; pi < placedCows.length; pi++) {
+    var pr = placedCows[pi][0], pc = placedCows[pi][1];
+    var rid = regionMap[pr][pc];
     if (ridSet.has(rid)) return;
     ridSet.add(rid);
   }
@@ -646,29 +533,42 @@ function checkWin() {
 function loseLife() {
   lives--;
   updateUI();
-  let cow = document.getElementById('cowIcon');
+  var cow = document.getElementById('cowIcon');
   cow.classList.add('angry');
-  setTimeout(() => cow.classList.remove('angry'), 500);
-  if (lives <= 0) setTimeout(() => { alert('游戏结束！'); newPuzzle(); }, 800);
+  setTimeout(function() { cow.classList.remove('angry'); }, 500);
+  if (lives <= 0) setTimeout(function() { alert('游戏结束！'); newPuzzle(); }, 800);
 }
 
 function winGame() {
   coins += 100;
   document.getElementById('coinsCount').textContent = coins;
-  document.getElementById('winMessage').textContent = `太棒了！第${currentLevel}关完成 +100金币`;
-  document.getElementById('winOverlay').classList.add('show');
-  currentLevel++;
+  if (currentLevel < TOTAL_LEVELS) {
+    document.getElementById('winMessage').textContent = '太棒了！第' + currentLevel + '关完成 +100金币';
+    document.getElementById('winOverlay').classList.add('show');
+    currentLevel++;
+  } else {
+    document.getElementById('winMessage').textContent = '\u{1F389} 恭喜通关全部1000关！+100金币';
+    document.getElementById('winOverlay').classList.add('show');
+    currentLevel = 1;
+  }
   document.getElementById('levelNum').textContent = currentLevel;
 }
 
-function isGivenCow(r, c) { return givenCows.some(g => g[0] === r && g[1] === c); }
+function isGivenCow(r, c) {
+  for (var gi = 0; gi < givenCows.length; gi++) if (givenCows[gi][0] === r && givenCows[gi][1] === c) return true;
+  return false;
+}
 function showBomb() {
-  let ov = document.getElementById('bombOverlay');
+  var ov = document.getElementById('bombOverlay');
   ov.classList.add('show');
-  setTimeout(() => ov.classList.remove('show'), 600);
+  setTimeout(function() { ov.classList.remove('show'); }, 600);
 }
 
-document.addEventListener('DOMContentLoaded', newPuzzle);
+// ============ 入口 ============
+document.addEventListener('DOMContentLoaded', async function() {
+  var ok = await loadLevelsData();
+  if (ok) newPuzzle();
+});
 </script>
 </body>
 </html>
