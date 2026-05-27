@@ -312,18 +312,23 @@ function computeMinimalGivens(answer, allSolutions) {
 
 // ============ 生成题目（唯一解 + 最少已知牛） ============
 function generatePuzzle() {
+  console.log('generatePuzzle called, level:', currentLevel);
   let eligible = getEligiblePresets(currentLevel);
+  console.log('eligible presets:', eligible);
 
   // 尝试所有候选预设，选第一个可生成唯一解的
   let shuffled = eligible.sort(() => Math.random() - 0.5);
   for (let p of shuffled) {
+    console.log('trying preset', p);
     let map = REGION_PRESETS[p].map(row => [...row]);
     let allSolutions = findAllSolutions(map);
-    if (allSolutions.length === 0) continue;
+    console.log('allSolutions count:', allSolutions.length);
+    if (allSolutions.length === 0) { console.log('no solutions, skip'); continue; }
 
     // 随机选一个解作为标准答案
     let answer = allSolutions[Math.floor(Math.random() * allSolutions.length)];
     let givens = computeMinimalGivens(answer, allSolutions);
+    console.log('givens count:', givens.length);
 
     // 保证至少有1个已知牛
     if (givens.length === 0) {
@@ -336,13 +341,16 @@ function generatePuzzle() {
 
     regionMap = map;
     regionPresetIdx = p;
+    console.log('SUCCESS: preset', p, 'givens:', JSON.stringify(givens));
     return { solution: answer, givenCows: givens };
   }
 
+  console.log('FALLBACK triggered');
   // 保底：纵向分区一定有解
   regionPresetIdx = 0;
   regionMap = REGION_PRESETS[0].map(row => [...row]);
   let all = findAllSolutions(regionMap);
+  console.log('fallback solutions:', all.length);
   let ans = all[Math.floor(Math.random() * all.length)];
   let gv = computeMinimalGivens(ans, all);
   if (gv.length === 0) {
@@ -355,6 +363,7 @@ function generatePuzzle() {
 
 // ============ 初始化 ============
 function newPuzzle() {
+  console.log('=== newPuzzle called, level:', currentLevel, '===');
   document.getElementById('winOverlay').classList.remove('show');
   document.querySelectorAll('.cell.error-mark').forEach(el => el.classList.remove('error-mark'));
   lives = 3;
@@ -363,6 +372,10 @@ function newPuzzle() {
   let puzzle = generatePuzzle();
   solution = puzzle.solution;
   givenCows = puzzle.givenCows;
+
+  console.log('solution count:', solution.filter(row => row.some(v => v)).length);
+  console.log('givenCows:', JSON.stringify(givenCows));
+  console.log('regionMap:', JSON.stringify(regionMap));
 
   boardState = Array.from({length: GRID_SIZE}, () => Array(GRID_SIZE).fill(0));
   trialState = Array.from({length: GRID_SIZE}, () => Array(GRID_SIZE).fill(0));
@@ -551,6 +564,7 @@ function renderBoard() {
       board.appendChild(cell);
     }
   }
+  console.log('renderBoard called, regionMap:', JSON.stringify(regionMap));
 }
 
 // ============ 点击 ============
